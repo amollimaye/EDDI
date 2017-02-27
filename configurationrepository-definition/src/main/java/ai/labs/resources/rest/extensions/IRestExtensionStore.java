@@ -2,6 +2,7 @@ package ai.labs.resources.rest.extensions;
 
 import ai.labs.resources.rest.documentdescriptor.model.DocumentDescriptor;
 import ai.labs.resources.rest.extensions.model.ExtensionDefinition;
+import io.swagger.annotations.Api;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -12,6 +13,7 @@ import java.util.List;
 /**
  * @author ginccc
  */
+@Api(value = "extensionstore")
 @Path("/extensionstore/extensions")
 public interface IRestExtensionStore {
     String resourceURI = "eddi://ai.labs.extensions/extensionstore/extensions/";
@@ -26,7 +28,7 @@ public interface IRestExtensionStore {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    ExtensionDefinition readExtension(@PathParam("id") String id, @QueryParam("version") Integer version) throws Exception;
+    ExtensionDefinition readExtension(@PathParam("id") String id, @QueryParam("version") Integer version);
 
     @PUT
     @Path("/{id}")

@@ -3,12 +3,12 @@ package ai.labs.memory;
 import ai.labs.memory.model.ConversationMemorySnapshot;
 import ai.labs.memory.model.ConversationState;
 import ai.labs.persistence.IResourceStore;
-import ai.labs.serialization.IJsonSerialization;
+import ai.labs.serialization.IDocumentBuilder;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.UpdateOptions;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import javax.inject.Inject;
@@ -20,28 +20,31 @@ import java.io.IOException;
 public class ConversationMemoryStore implements IConversationMemoryStore, IResourceStore<ConversationMemorySnapshot> {
     private static final String CONVERSATION_COLLECTION = "conversationmemories";
     private static final String CONVERSATION_STATE_FIELD = "conversationState";
-    private final DBCollection conversationCollection;
-    private final IJsonSerialization jsonSerialization;
+    private final MongoCollection<Document> conversationCollection;
+    private final IDocumentBuilder documentBuilder;
 
     @Inject
-    public ConversationMemoryStore(DB database, IJsonSerialization jsonSerialization) {
+    public ConversationMemoryStore(MongoDatabase database, IDocumentBuilder documentBuilder) {
         conversationCollection = database.getCollection(CONVERSATION_COLLECTION);
-        this.jsonSerialization = jsonSerialization;
+        this.documentBuilder = documentBuilder;
     }
 
     @Override
     public String storeConversationMemorySnapshot(ConversationMemorySnapshot snapshot) throws IResourceStore.ResourceStoreException {
         try {
-            String json = jsonSerialization.serialize(snapshot);
-            DBObject document = (DBObject) JSON.parse(json);
+            String json = documentBuilder.toString(snapshot);
+            Document document = Document.parse(json);
+
+            document.remove("id");
 
             if (snapshot.getId() != null) {
                 document.put("_id", new ObjectId(snapshot.getId()));
+                conversationCollection.updateOne(new Document("_id", new ObjectId(snapshot.getId())),
+                        new Document("$set", document),
+                        new UpdateOptions().upsert(true));
+            } else {
+                conversationCollection.insertOne(document);
             }
-
-            document.removeField("id");
-
-            conversationCollection.save(document);
 
             return document.get("_id").toString();
         } catch (IOException e) {
@@ -51,7 +54,7 @@ public class ConversationMemoryStore implements IConversationMemoryStore, IResou
 
     @Override
     public ConversationMemorySnapshot loadConversationMemorySnapshot(String conversationId) throws IResourceStore.ResourceNotFoundException, IResourceStore.ResourceStoreException {
-        DBObject document = conversationCollection.findOne(new BasicDBObject("_id", new ObjectId(conversationId)));
+        Document document = conversationCollection.find(new Document("_id", new ObjectId(conversationId))).first();
 
         try {
             if (document == null) {
@@ -60,10 +63,10 @@ public class ConversationMemoryStore implements IConversationMemoryStore, IResou
                 throw new IResourceStore.ResourceNotFoundException(message);
             }
 
-            document.removeField("_id");
+            document.remove("_id");
 
-            ConversationMemorySnapshot snapshot = jsonSerialization.deserialize(document.toString(), ConversationMemorySnapshot.class);
-
+            ConversationMemorySnapshot snapshot = documentBuilder.build(document, ConversationMemorySnapshot.class);
+            
             snapshot.setId(conversationId);
 
             return snapshot;
@@ -74,19 +77,19 @@ public class ConversationMemoryStore implements IConversationMemoryStore, IResou
 
     @Override
     public void setConversationState(String conversationId, ConversationState conversationState) {
-        BasicDBObject updateConversationStateField = new BasicDBObject("$set", new BasicDBObject(CONVERSATION_STATE_FIELD, conversationState.name()));
-        conversationCollection.update(new BasicDBObject("_id", new ObjectId(conversationId)), updateConversationStateField);
+        Document updateConversationStateField = new Document("$set", new BasicDBObject(CONVERSATION_STATE_FIELD, conversationState.name()));
+        conversationCollection.updateMany(new Document("_id", new ObjectId(conversationId)), updateConversationStateField);
     }
 
     @Override
     public void deleteConversationMemorySnapshot(String conversationId) throws ResourceStoreException, ResourceNotFoundException {
-        conversationCollection.remove(new BasicDBObject("_id", new ObjectId(conversationId)));
+        conversationCollection.deleteOne(new Document("_id", new ObjectId(conversationId)));
     }
 
     @Override
     public ConversationState getConversationState(String conversationId) {
-        DBObject conversationMemoryDocument = conversationCollection.findOne(new BasicDBObject("_id", new ObjectId(conversationId)));
-        if (conversationMemoryDocument != null && conversationMemoryDocument.containsField(CONVERSATION_STATE_FIELD)) {
+        Document conversationMemoryDocument = conversationCollection.find(new Document("_id", new ObjectId(conversationId))).first();
+        if (conversationMemoryDocument != null && conversationMemoryDocument.containsKey(CONVERSATION_STATE_FIELD)) {
             return ConversationState.valueOf(conversationMemoryDocument.get(CONVERSATION_STATE_FIELD).toString());
         }
 

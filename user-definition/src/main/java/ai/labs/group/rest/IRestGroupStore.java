@@ -1,6 +1,7 @@
 package ai.labs.group.rest;
 
 import ai.labs.group.model.Group;
+import io.swagger.annotations.Api;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -9,12 +10,13 @@ import javax.ws.rs.core.Response;
 /**
  * @author ginccc
  */
+@Api(value = "groups")
 @Path("/groupstore/groups")
 public interface IRestGroupStore {
     @GET
     @Path("/{groupId}")
     @Produces(MediaType.APPLICATION_JSON)
-    Group readGroup(@PathParam("groupId") String groupId) throws Exception;
+    Group readGroup(@PathParam("groupId") String groupId);
 
     @PUT
     @Path("/{groupId}")

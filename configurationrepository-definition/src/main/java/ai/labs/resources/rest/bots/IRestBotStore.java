@@ -3,6 +3,7 @@ package ai.labs.resources.rest.bots;
 import ai.labs.resources.rest.IRestVersionInfo;
 import ai.labs.resources.rest.bots.model.BotConfiguration;
 import ai.labs.resources.rest.documentdescriptor.model.DocumentDescriptor;
+import io.swagger.annotations.Api;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * @author ginccc
  */
+@Api(value = "botstore")
 @Path("/botstore/bots")
 public interface IRestBotStore extends IRestVersionInfo {
     String resourceURI = "eddi://ai.labs.bot/botstore/bots/";
@@ -27,7 +29,7 @@ public interface IRestBotStore extends IRestVersionInfo {
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    BotConfiguration readBot(@PathParam("id") String id, @QueryParam("version") Integer version) throws Exception;
+    BotConfiguration readBot(@PathParam("id") String id, @QueryParam("version") Integer version);
 
     @PUT
     @Path("/{id}")

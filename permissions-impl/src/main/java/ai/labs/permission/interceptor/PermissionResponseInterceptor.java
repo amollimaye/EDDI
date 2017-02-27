@@ -24,6 +24,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.net.URI;
@@ -64,7 +65,7 @@ public class PermissionResponseInterceptor implements ContainerResponseFilter {
                 String methodName = resourceInfo.getResourceMethod().getName();
                 // the resource was created successfully
                 if (httpStatus == 201) {
-                    String respondedResourceURIString = response.getEntity().toString();
+                    String respondedResourceURIString = response.getHeaderString(HttpHeaders.LOCATION);
                     URI respondedResourceURI = URI.create(respondedResourceURIString);
                     IResourceStore.IResourceId respondedResourceId = RestUtilities.extractResourceId(respondedResourceURI);
 
@@ -89,10 +90,6 @@ public class PermissionResponseInterceptor implements ContainerResponseFilter {
                             permissionStore.createPermissions(respondedResourceId.getId(), PermissionUtilities.createDefaultPermissions(userURI));
                         }
                     }
-                } else if (httpStatus >= 200 && httpStatus < 300 && httpStatus != 202) {
-                    String message = "A POST request was successfully executed, but didn't return http code 201 or 202). [methodName=%s]";
-                    message = String.format(message, methodName);
-                    log.error(message);
                 }
             }
         } catch (IResourceStore.ResourceStoreException | IResourceStore.ResourceNotFoundException e) {

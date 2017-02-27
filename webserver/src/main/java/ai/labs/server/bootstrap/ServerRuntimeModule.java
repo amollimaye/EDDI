@@ -39,6 +39,7 @@ public class ServerRuntimeModule extends AbstractBaseModule {
     @Singleton
     public IServerRuntime provideServerRuntime(@Named("system.environment") String environment,
                                                @Named("systemRuntime.resourceDir") String resourceDir,
+                                               @Named("webServer.applicationConfigurationClass") String applicationConfigurationClass,
                                                @Named("webServer.host") String host,
                                                @Named("webServer.httpPort") Integer httpPort,
                                                @Named("webServer.httpsPort") Integer httpsPort,
@@ -50,39 +51,34 @@ public class ServerRuntimeModule extends AbstractBaseModule {
                                                @Named("webServer.virtualHosts") String virtualHosts,
                                                @Named("webServer.useCrossSiteScriptingHeaderParam") Boolean useCrossSiteScriptingHeaderParam,
                                                @Named("webServer.baseUri") String baseUri,
-                                               @Named("webServer.applicationConfigurationClass") String applicationConfigurationClass,
                                                @Named("webServer.enableKeycloakSSO") Boolean enableKeycloakSSO,
                                                GuiceResteasyBootstrapServletContextListener contextListener,
                                                SwaggerServletContextListener swaggerContextListener,
                                                HttpServletDispatcher httpServletDispatcher,
                                                Provider<SecurityHandler> securityHandlerProvider,
-                                               LoginService mongoLoginService) {
+                                               LoginService mongoLoginService) throws ClassNotFoundException {
 
-        try {
-            ServerRuntime.Options options = new ServerRuntime.Options();
-            options.applicationConfiguration = Class.forName(applicationConfigurationClass);
-            options.loginService = mongoLoginService;
-            options.host = host;
-            options.httpPort = httpPort;
-            options.httpsPort = httpsPort;
-            options.sslOnly = sslOnly;
-            options.defaultPath = defaultPath;
-            options.pathKeystore = System.getProperty("user.dir") + relativePathKeystore;
-            options.passwordKeystore = passwordKeystore;
-            options.responseDelayInMillis = responseDelayInMillis;
-            options.virtualHosts = virtualHosts.split(";");
-            options.useCrossSiteScripting = useCrossSiteScriptingHeaderParam;
+        ServerRuntime.Options options = new ServerRuntime.Options();
+        options.applicationConfiguration = Class.forName(applicationConfigurationClass);
+        options.loginService = mongoLoginService;
+        options.host = host;
+        options.httpPort = httpPort;
+        options.httpsPort = httpsPort;
+        options.sslOnly = sslOnly;
+        options.defaultPath = defaultPath;
+        options.pathKeystore = System.getProperty("user.dir") + relativePathKeystore;
+        options.passwordKeystore = passwordKeystore;
+        options.responseDelayInMillis = responseDelayInMillis;
+        options.virtualHosts = virtualHosts.split(";");
+        options.useCrossSiteScripting = useCrossSiteScriptingHeaderParam;
 
-            SecurityHandler securityHandler = null;
-            if (enableKeycloakSSO) {
-                securityHandler = securityHandlerProvider.get();
-            }
-
-            return new ServerRuntime(options, contextListener, swaggerContextListener, httpServletDispatcher,
-                    securityHandler, environment, resourceDir, baseUri);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e.getLocalizedMessage(), e);
+        SecurityHandler securityHandler = null;
+        if (enableKeycloakSSO) {
+            securityHandler = securityHandlerProvider.get();
         }
+
+        return new ServerRuntime(options, contextListener, swaggerContextListener, httpServletDispatcher,
+                securityHandler, environment, resourceDir, baseUri);
     }
 
     @Provides

@@ -4,15 +4,19 @@ package ai.labs.rest.rest;
 import ai.labs.memory.model.ConversationState;
 import ai.labs.memory.model.Deployment;
 import ai.labs.memory.model.SimpleConversationMemorySnapshot;
+import io.swagger.annotations.Api;
 import org.jboss.resteasy.annotations.cache.NoCache;
 
 import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
  * @author ginccc
  */
+@Api(value = "bot engine")
 @Path("/bots")
 public interface IRestBotEngine {
     /**
@@ -31,14 +35,15 @@ public interface IRestBotEngine {
     @NoCache
     @Path("/{environment}/{botId}/{conversationId}")
     @Produces(MediaType.APPLICATION_JSON)
-    SimpleConversationMemorySnapshot readConversationLog(@PathParam("environment") Deployment.Environment environment,
-                                                         @PathParam("botId") String botId,
-                                                         @PathParam("conversationId") String conversationId) throws Exception;
+    SimpleConversationMemorySnapshot readConversation(@PathParam("environment") Deployment.Environment environment,
+                                                      @PathParam("botId") String botId,
+                                                      @PathParam("conversationId") String conversationId,
+                                                      @QueryParam("includeAll") @DefaultValue("false") Boolean includeAll);
 
     @GET
     @Path("/{environment}/conversationstatus/{conversationId}")
     ConversationState getConversationState(@PathParam("environment") Deployment.Environment environment,
-                                           @PathParam("conversationId") String conversationId) throws Exception;
+                                           @PathParam("conversationId") String conversationId);
 
     /**
      * talk to bot
@@ -53,34 +58,35 @@ public interface IRestBotEngine {
     @POST
     @Path("/{environment}/{botId}/{conversationId}")
     @Consumes(MediaType.TEXT_PLAIN)
-    Response say(@PathParam("environment") Deployment.Environment environment,
-                 @PathParam("botId") String botId,
-                 @PathParam("conversationId") String conversationId,
-                 @DefaultValue("") String message) throws Exception;
+    void say(@PathParam("environment") Deployment.Environment environment,
+             @PathParam("botId") String botId,
+             @PathParam("conversationId") String conversationId,
+             @DefaultValue("") String message,
+             @Suspended final AsyncResponse response);
 
     @GET
     @Path("/{environment}/{botId}/undo/{conversationId}")
     @Produces(MediaType.TEXT_PLAIN)
     Boolean isUndoAvailable(@PathParam("environment") Deployment.Environment environment,
                             @PathParam("botId") String botId,
-                            @PathParam("conversationId") String conversationId) throws Exception;
+                            @PathParam("conversationId") String conversationId);
 
     @POST
     @Path("/{environment}/{botId}/undo/{conversationId}")
     Response undo(@PathParam("environment") Deployment.Environment environment,
                   @PathParam("botId") String botId,
-                  @PathParam("conversationId") String conversationId) throws Exception;
+                  @PathParam("conversationId") String conversationId);
 
     @GET
     @Path("/{environment}/{botId}/redo/{conversationId}")
     @Produces(MediaType.TEXT_PLAIN)
     Boolean isRedoAvailable(@PathParam("environment") Deployment.Environment environment,
                             @PathParam("botId") String botId,
-                            @PathParam("conversationId") String conversationId) throws Exception;
+                            @PathParam("conversationId") String conversationId);
 
     @POST
     @Path("/{environment}/{botId}/redo/{conversationId}")
     Response redo(@PathParam("environment") Deployment.Environment environment,
                   @PathParam("botId") String botId,
-                  @PathParam("conversationId") String conversationId) throws Exception;
+                  @PathParam("conversationId") String conversationId);
 }
