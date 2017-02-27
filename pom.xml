@@ -41,6 +41,8 @@
         <module>nlpserver</module>
         <module>caching-definition</module>
         <module>caching-impl-infinispan</module>
+        <module>callback-definition</module>
+        <module>callback-impl</module>
     </modules>
 
     <build>
