@@ -28,6 +28,8 @@ The most outstanding features are:
 * very flexible in dialog structure and 
 * allows sharing of knowledge between bots
 
+This is customised by Amol
+
 technical spec:
 * Resource- / REST-oriented architecture
 * Java
